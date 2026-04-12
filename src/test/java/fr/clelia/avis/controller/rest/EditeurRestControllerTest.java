@@ -1,13 +1,15 @@
 package fr.clelia.avis.controller.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.clelia.avis.application.port.in.EditeurUseCase;
 import fr.clelia.avis.domain.Editeur;
-import fr.clelia.avis.dto.EditeurDto;
+import fr.clelia.avis.infrastructure.web.dto.WebDTOs;
 import fr.clelia.avis.application.service.EditeurService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,45 +23,40 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest // Test d'intégration
-//@AutoConfigureMockMvc
+@SpringBootTest
+@AutoConfigureMockMvc  // FIX 1: was commented out — MockMvc won't be injected without this
 class EditeurRestControllerTest {
 
-    // cet objet imite ce que fait Postwoman, Postman, Insomnia, Swagger ou le front
-    // Angular
     @Autowired
     private MockMvc mockMvc;
 
-    // L'annotation @Autowired n'est plus recommandée ds src/main/java
-    // mais elle est tout à fait acceptée dans les classes de test
     @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
-    private EditeurService editeurService;
+    private EditeurService editeurService;  // FIX 2: keep EditeurService (concrete class), not the interface
 
     @BeforeEach
     void setUp() {
-        List<EditeurDto> editeurs = editeurService.recupererEditeurs();
-        editeurs.forEach(editeur -> { editeurService.supprimerEditeur(editeur.id()); });
+        // FIX 3: recupererEditeurs() now returns List<Editeur>, not List<EditeurDto>
+        List<Editeur> editeurs = editeurService.recupererEditeurs();
+        editeurs.forEach(editeur -> editeurService.supprimerEditeur(editeur.getId()));
     }
 
     @Test
     void testerPostEditeur() throws Exception {
-    //Mock data
-    String nomEditeur = "test";
-    String nomLogo = "logo";
-    EditeurDto editeurDto = new EditeurDto(null, nomEditeur, nomLogo);
-    // On prépare la requête HTTP qui sera envoyée au contrôleur REST
+        String nomEditeur = "test";
+        String nomLogo = "logo";
+        // FIX 4: EditeurDto is gone — use AjouterEditeurRequest (the new web DTO)
+        WebDTOs.AjouterEditeurRequest request = new WebDTOs.AjouterEditeurRequest(nomEditeur, nomLogo);
+
         MockHttpServletRequestBuilder requestBuilder = post("/api/editeurs")
-                .content(objectMapper.writeValueAsString(editeurDto))
+                .content(objectMapper.writeValueAsString(request))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
 
-        // On demande au mockMvc d'envoyer la requête au back-end
-        mockMvc.perform(requestBuilder) //Send request
+        mockMvc.perform(requestBuilder)
                 .andExpect(status().isCreated())
-                // Check results
                 .andExpect(MockMvcResultMatchers.jsonPath("$.nom").value(nomEditeur))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.logo").value(nomLogo))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNumber())
@@ -68,30 +65,33 @@ class EditeurRestControllerTest {
 
     @Test
     void testerPostEditeurShouldReturn409() throws Exception {
-        //Mock data
         String nomEditeur = "test";
         String logo = "logo";
-        EditeurDto editeurDto = new EditeurDto(null, nomEditeur, logo);
+        WebDTOs.AjouterEditeurRequest request = new WebDTOs.AjouterEditeurRequest(nomEditeur, logo);
 
-        editeurService.ajouterEditeur(editeurDto);
+        // Add via service using the use case command
+        editeurService.ajouterEditeur(
+                new EditeurUseCase.AjouterEditeurCommand(nomEditeur, logo)
+        );
 
-        //Tests
         MockHttpServletRequestBuilder requestBuilder = post("/api/editeurs")
-                .content(objectMapper.writeValueAsString(editeurDto))
+                .content(objectMapper.writeValueAsString(request))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON);
-        mockMvc.perform(requestBuilder) //Send request
+
+        mockMvc.perform(requestBuilder)
                 .andExpect(status().isConflict())
                 .andDo(MockMvcResultHandlers.print());
-
     }
 
     @Test
     void testGetEditeur() throws Exception {
-
-        String editeur = "test";
-        String logo="logo";
-        Editeur e = editeurService.ajouterEditeur(new Editeur(editeur, logo));
+        String nom = "test";
+        String logo = "logo";
+        // ajouterEditeur now takes a command, not a domain object
+        Editeur e = editeurService.ajouterEditeur(
+                new EditeurUseCase.AjouterEditeurCommand(nom, logo)
+        );
 
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/api/editeurs/{id}", e.getId());
 
@@ -105,52 +105,40 @@ class EditeurRestControllerTest {
 
     @Test
     void testGetEditeurs() throws Exception {
-        String nomEditeur1 = "testEditeur1";
-        String logoEditeur1 = "logoEditeur1";
-        String nomEditeur2 = "testEditeur2";
-        String logoEditeur2 = "logoEditeur1";
-        EditeurDto editeurDto1 = new EditeurDto(null, nomEditeur1, logoEditeur1);
-        EditeurDto editeurDto2 = new EditeurDto(null, nomEditeur2, logoEditeur2);
-        editeurService.ajouterEditeur(editeurDto1);
-        editeurService.ajouterEditeur(editeurDto2);
+        editeurService.ajouterEditeur(new EditeurUseCase.AjouterEditeurCommand("testEditeur1", "logoEditeur1"));
+        editeurService.ajouterEditeur(new EditeurUseCase.AjouterEditeurCommand("testEditeur2", "logoEditeur2"));
+
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.get("/api/editeurs");
 
         mockMvc.perform(requestBuilder)
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").isNumber())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].nom").value(nomEditeur1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].logo").value(logoEditeur1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].nom").value("testEditeur1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].logo").value("logoEditeur1"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").isNumber())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].nom").value(nomEditeur2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].logo").value(logoEditeur2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].nom").value("testEditeur2"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].logo").value("logoEditeur2"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(2));
-
     }
 
     @Test
     void testDeleteEditeur() throws Exception {
-
-        String nom = "test";
-        String logo = "logo";
-        Editeur e = editeurService.ajouterEditeur(new Editeur(nom, logo));
+        Editeur e = editeurService.ajouterEditeur(
+                new EditeurUseCase.AjouterEditeurCommand("test", "logo")
+        );
 
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete("/api/editeurs/{id}", e.getId());
 
         mockMvc.perform(requestBuilder)
-                //.andExpect(MockMvcResultMatchers.jsonPath("$").value(true))
-                //.andExpect(status().is2xxSuccessful())
                 .andExpect(status().isNoContent())
                 .andDo(MockMvcResultHandlers.print());
     }
 
     @RepeatedTest(100)
     void testDeleteEditeurShouldReturn404() throws Exception {
-
         MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.delete("/api/editeurs/100");
 
         mockMvc.perform(requestBuilder)
-                //.andExpect(MockMvcResultMatchers.jsonPath("$").value(true))
                 .andExpect(status().isNotFound())
                 .andDo(MockMvcResultHandlers.print());
     }
-
 }
