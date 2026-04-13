@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,8 +23,10 @@ import java.util.List;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @SpringBootTest
-@AutoConfigureMockMvc  // FIX 1: was commented out — MockMvc won't be injected without this
+@AutoConfigureMockMvc
 class EditeurRestControllerTest {
 
     @Autowired
@@ -34,11 +36,10 @@ class EditeurRestControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private EditeurService editeurService;  // FIX 2: keep EditeurService (concrete class), not the interface
+    private EditeurService editeurService;
 
     @BeforeEach
     void setUp() {
-        // FIX 3: recupererEditeurs() now returns List<Editeur>, not List<EditeurDto>
         List<Editeur> editeurs = editeurService.recupererEditeurs();
         editeurs.forEach(editeur -> editeurService.supprimerEditeur(editeur.getId()));
     }
@@ -47,7 +48,6 @@ class EditeurRestControllerTest {
     void testerPostEditeur() throws Exception {
         String nomEditeur = "test";
         String nomLogo = "logo";
-        // FIX 4: EditeurDto is gone — use AjouterEditeurRequest (the new web DTO)
         WebDTOs.AjouterEditeurRequest request = new WebDTOs.AjouterEditeurRequest(nomEditeur, nomLogo);
 
         MockHttpServletRequestBuilder requestBuilder = post("/api/editeurs")
@@ -69,7 +69,6 @@ class EditeurRestControllerTest {
         String logo = "logo";
         WebDTOs.AjouterEditeurRequest request = new WebDTOs.AjouterEditeurRequest(nomEditeur, logo);
 
-        // Add via service using the use case command
         editeurService.ajouterEditeur(
                 new EditeurUseCase.AjouterEditeurCommand(nomEditeur, logo)
         );
@@ -88,7 +87,6 @@ class EditeurRestControllerTest {
     void testGetEditeur() throws Exception {
         String nom = "test";
         String logo = "logo";
-        // ajouterEditeur now takes a command, not a domain object
         Editeur e = editeurService.ajouterEditeur(
                 new EditeurUseCase.AjouterEditeurCommand(nom, logo)
         );
