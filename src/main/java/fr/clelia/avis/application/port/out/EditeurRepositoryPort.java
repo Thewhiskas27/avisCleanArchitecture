@@ -7,6 +7,8 @@ import java.util.Optional;
 
 public interface EditeurRepositoryPort {
     Editeur save(Editeur editeur);
+    boolean existsByNom(String nom);
+    boolean existsById(Long id);
     Optional<Editeur> findById(Long id);
     Optional<Editeur> findByNom(String nom);
     List<Editeur> findAll();

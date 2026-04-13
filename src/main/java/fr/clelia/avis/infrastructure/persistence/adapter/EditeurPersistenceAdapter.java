@@ -25,6 +25,16 @@ public class EditeurPersistenceAdapter implements EditeurRepositoryPort {
     }
 
     @Override
+    public boolean existsByNom(String nom) {
+        return false;
+    }
+
+    @Override
+    public boolean existsById(Long id) {
+        return false;
+    }
+
+    @Override
     public Optional<Editeur> findById(Long id) {
         return editeurJpaRepository.findById(id).map(this::toDomain);
     }
