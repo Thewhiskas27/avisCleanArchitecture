@@ -3,6 +3,8 @@ package fr.clelia.avis.application.service;
 import fr.clelia.avis.application.port.in.EditeurUseCase;
 import fr.clelia.avis.application.port.out.EditeurRepositoryPort;
 import fr.clelia.avis.domain.Editeur;
+import fr.clelia.avis.domain.exception.EditeurDejaExistantException;
+import fr.clelia.avis.domain.exception.EditeurNotFoundException;
 
 import java.util.List;
 
@@ -17,7 +19,7 @@ public class EditeurService implements EditeurUseCase {
     @Override
     public Editeur ajouterEditeur(AjouterEditeurCommand command) {
         editeurRepository.findByNom(command.nom()).ifPresent(e -> {
-            throw new RuntimeException("Cet éditeur est déjà présent : " + command.nom());
+            throw new EditeurDejaExistantException(command.nom());
         });
         Editeur editeur = new Editeur(command.nom(), command.logo());
         return editeurRepository.save(editeur);
@@ -26,7 +28,7 @@ public class EditeurService implements EditeurUseCase {
     @Override
     public Editeur recupererEditeur(Long id) {
         return editeurRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Éditeur introuvable : " + id));
+                .orElseThrow(() -> new EditeurNotFoundException(id));
     }
 
     @Override
