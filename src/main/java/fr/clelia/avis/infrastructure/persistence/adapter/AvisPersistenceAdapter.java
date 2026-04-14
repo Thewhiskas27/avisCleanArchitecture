@@ -24,6 +24,11 @@ public class AvisPersistenceAdapter implements AvisRepositoryPort {
     }
 
     @Override
+    public Long count() {
+        return 0L;
+    }
+
+    @Override
     public Avis save(Avis avis) {
         return toDomain(avisJpaRepository.save(toEntity(avis)));
     }

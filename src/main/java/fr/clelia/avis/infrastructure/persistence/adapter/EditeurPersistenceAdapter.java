@@ -20,6 +20,11 @@ public class EditeurPersistenceAdapter implements EditeurRepositoryPort {
     }
 
     @Override
+    public long count() {
+        return 0;
+    }
+
+    @Override
     public Editeur save(Editeur editeur) {
         return toDomain(editeurJpaRepository.save(toEntity(editeur)));
     }

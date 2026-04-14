@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,13 +63,14 @@ class EditeurServiceTest {
     @Test
     void shouldFindEditeurById() {
         // GIVEN
-        UUID id = UUID.randomUUID();
-        Editeur editeur = new Editeur(id, "Sony", "logo");
+        Long id = 1L;
+        Editeur editeur = new Editeur("Sony", "logo");
+        editeur.setId(id);
 
         when(repository.findById(id)).thenReturn(Optional.of(editeur));
 
         // WHEN
-        Optional<Editeur> result = service.recupererEditeur(id);
+        Optional<Editeur> result = Optional.ofNullable(service.recupererEditeur(id));
 
         // THEN
         assertThat(result).isPresent();
@@ -80,8 +80,7 @@ class EditeurServiceTest {
     @Test
     void shouldDeleteEditeur() {
         // GIVEN
-        UUID id = UUID.randomUUID();
-
+        Long id = 1L;
         when(repository.existsById(id)).thenReturn(true);
 
         // WHEN

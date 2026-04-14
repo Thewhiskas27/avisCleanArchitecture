@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface JeuRepositoryPort {
+    Long count();
     Jeu save(Jeu jeu);
     Optional<Jeu> findById(Long id);
     List<Jeu> findAll();

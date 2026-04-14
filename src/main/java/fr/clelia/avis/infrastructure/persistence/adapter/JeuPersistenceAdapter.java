@@ -26,6 +26,11 @@ public class JeuPersistenceAdapter implements JeuRepositoryPort {
     }
 
     @Override
+    public Long count() {
+        return 0L;
+    }
+
+    @Override
     public Jeu save(Jeu jeu) {
         JeuJPAEntity entity = toEntity(jeu);
         JeuJPAEntity saved = jeuJpaRepository.save(entity);

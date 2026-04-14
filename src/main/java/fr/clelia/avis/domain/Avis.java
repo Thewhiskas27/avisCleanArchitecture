@@ -1,7 +1,5 @@
 package fr.clelia.avis.domain;
 
-import fr.clelia.avis.business.Moderateur;
-
 import java.time.LocalDateTime;
 
 public class Avis {
