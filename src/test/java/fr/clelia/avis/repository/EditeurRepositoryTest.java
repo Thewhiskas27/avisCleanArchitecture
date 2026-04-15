@@ -1,6 +1,7 @@
 package fr.clelia.avis.repository;
 
-import fr.clelia.avis.business.Editeur;
+import fr.clelia.avis.application.port.out.EditeurRepositoryPort;
+import fr.clelia.avis.domain.Editeur;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -11,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class EditeurRepositoryTest {
 
     @Autowired
-    EditeurRepository editeurRepository;
+    EditeurRepositoryPort editeurRepository;
 
     @Test
     void testSave() {

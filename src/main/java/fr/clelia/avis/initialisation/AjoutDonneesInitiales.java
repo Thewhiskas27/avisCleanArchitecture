@@ -3,9 +3,11 @@ package fr.clelia.avis.initialisation;
 import fr.clelia.avis.application.port.out.AvisRepositoryPort;
 import fr.clelia.avis.application.port.out.EditeurRepositoryPort;
 import fr.clelia.avis.application.port.out.JeuRepositoryPort;
+import fr.clelia.avis.application.port.out.JoueurRepositoryPort;
 import fr.clelia.avis.domain.Avis;
 import fr.clelia.avis.domain.Editeur;
 import fr.clelia.avis.domain.Jeu;
+import fr.clelia.avis.domain.Joueur;
 import lombok.AllArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Profile;
@@ -23,6 +25,7 @@ public class AjoutDonneesInitiales {
 
     private final EditeurRepositoryPort editeurRepository;
     private final JeuRepositoryPort jeuRepository;
+    private final JoueurRepositoryPort joueurRepository;
     private final AvisRepositoryPort avisRepository;
 
     @EventListener(ApplicationReadyEvent.class)
@@ -32,6 +35,10 @@ public class AjoutDonneesInitiales {
         ajouterAvis();
     }
 
+    // ------------------------
+    // Editeurs
+    // ------------------------
+
     private void ajouterEditeurs() {
         if (editeurRepository.count() > 0) return;
 
@@ -39,6 +46,10 @@ public class AjoutDonneesInitiales {
         editeurRepository.save(new Editeur("Ubisoft", "ubisoft.com"));
         editeurRepository.save(new Editeur("Psyonix", "psyonix.com"));
     }
+
+    // ------------------------
+    // Jeux
+    // ------------------------
 
     private void ajouterJeux() {
         if (jeuRepository.count() > 0) return;
@@ -64,17 +75,39 @@ public class AjoutDonneesInitiales {
         jeuRepository.save(assassinsCreed);
     }
 
+    // ------------------------
+    // Avis
+    // ------------------------
+
     private void ajouterAvis() {
         if (avisRepository.count() > 0) return;
 
         Jeu jeu = jeuRepository.findAll().get(0);
+        Joueur joueur = creerOuRecupererJoueurParDefaut();
 
         Avis avis = new Avis();
         avis.setContenu("Excellent jeu, immersion incroyable");
         avis.setNote(9);
         avis.setJeu(jeu);
-        // statut = EN_ATTENTE par défaut (constructor)
+        avis.setJoueur(joueur); // ✅ REQUIRED by UML & JPA
 
         avisRepository.save(avis);
+    }
+
+    // ------------------------
+    // Joueur par défaut
+    // ------------------------
+
+    private Joueur creerOuRecupererJoueurParDefaut() {
+
+        return joueurRepository.findByEmail("demo@esgi.fr")
+                .orElseGet(() -> {
+                    Joueur joueur = new Joueur();
+                    joueur.setPseudo("joueur-demo");
+                    joueur.setEmail("demo@esgi.fr");
+                    joueur.setMotDePasse("password");
+                    joueur.setDateDeNaissance(LocalDate.of(2000, 1, 1));
+                    return joueurRepository.save(joueur);
+                });
     }
 }
